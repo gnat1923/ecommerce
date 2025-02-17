@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from objects import Base
+from contextlib import contextmanager
 
 # SQLite database URL
 DATABASE_URL = "sqlite:///ecommerce.db"
@@ -14,6 +15,15 @@ Base.metadata.create_all(engine)
 # Create a session factory
 Session = sessionmaker(bind=engine)
 
-# function to get a db session
+# function to get a db session, with context manager
+@contextmanager
 def get_session():
-    return Session()
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
