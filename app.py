@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+from sqlalchemy.orm import joinedload
 from database import get_session
 from objects import Customer, Order, Product, OrderItem
 
@@ -33,13 +34,25 @@ def serialise(obj):
         }
     return {}
 
+# Homepage
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
+
 # Routes for customers
 @app.route("/customers", methods=["GET"])
 def get_customers():
     with get_session() as session:
-        customers = session.query(Customer).all()
+        # Eager load the orders relationship so html can access it
+        customers = session.query(Customer).options(joinedload(Customer.orders)).all()
         session.close()
-    return jsonify([serialise(customer) for customer in customers])
+    
+    # differentiate between .json and html requests
+    if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
+        return jsonify([serialise(customer) for customer in customers])
+    else:
+        return render_template("customers.html", title="Customers", customers=customers)
+    
 
 @app.route("/customers/<int:customer_id>", methods=["GET"])
 def get_customer(customer_id):
@@ -95,6 +108,7 @@ def create_product():
 def get_orders():
     with get_session() as session:
         orders = session.query(Order).all()
+        orders_data = [serialise(order) for order in orders]
         session.close()
     return jsonify([serialise(order) for order in orders])
 
@@ -113,14 +127,27 @@ def create_order():
     data = request.json
     with get_session() as session:
         order = Order(customer_id=data["customer_id"])
-        for item in data["items"]:
-            order_item = OrderItem(product_id=item["product_id"], quantity=item["quantity"])
-            order.items.append(order_item)
-        
         session.add(order)
+        session.commit() # Add order so we can access order.id
+
+        # Add order items
+        for item in data["items"]:
+            order_item = OrderItem(
+                order_id = order.id,
+                product_id=item["product_id"], 
+                quantity=item["quantity"])
+            session.add(order_item)
         session.commit()
-        session.close()
-        order_data = serialise(order)
+
+        order_data = {
+            "id" : order.id,
+            "customer_id" : order.customer_id,
+            "items": [
+                {"product_id" : item.product_id, "quantity" : item.quantity}
+                for item in order.items
+            ]
+        }
+
     return jsonify(order_data), 201
 
 # Run the flask app
