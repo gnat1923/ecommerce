@@ -3,8 +3,11 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
     <ul>
-        <li><a href="{{ url_for('get_customers') }}">Home</a></li>
-        <li><a>Customers</a></li>    
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('get_customers') }}">Customers</a></li>
+        <li><a href="{{ url_for('get_products') }}">Products</a></li>
+        <li><a href="{{ url_for('get_orders') }}">Orders</a></li>
+          
     </ul>
   
 </nav>

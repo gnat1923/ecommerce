@@ -51,7 +51,7 @@ def get_customers():
     if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
         return jsonify([serialise(customer) for customer in customers])
     else:
-        return render_template("customers.html", title="Customers", customers=customers)
+        return render_template("customers.html", title="Customers - ", customers=customers)
     
 
 @app.route("/customers/<int:customer_id>", methods=["GET"])
@@ -79,8 +79,13 @@ def create_customer():
 def get_products():
     with get_session() as session:
         products = session.query(Product).all()
+        products_data = [serialise(product) for product in products]
         session.close()
-    return jsonify([serialise(product) for product in products])
+
+    if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
+        return jsonify(products_data)
+    else:
+        return render_template("products.html", title="Products - ", products=products)
 
 @app.route("/products/<int:product_id>", methods=["GET"])
 def get_product(product_id):
@@ -107,10 +112,14 @@ def create_product():
 @app.route("/orders", methods=["GET"])
 def get_orders():
     with get_session() as session:
-        orders = session.query(Order).all()
+        orders = session.query(Order).options(joinedload(Order.customer)).options(joinedload(Order.items)).all()
         orders_data = [serialise(order) for order in orders]
         session.close()
-    return jsonify([serialise(order) for order in orders])
+
+    if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
+        return jsonify(orders_data)
+    else:
+        return render_template("orders.html", title="Orders - ", orders=orders)
 
 @app.route("/orders/<int:order_id>", methods=["GET"])
 def get_order(order_id):
