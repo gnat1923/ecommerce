@@ -74,6 +74,20 @@ def create_customer():
         customer_data = serialise(customer)
     return jsonify(customer_data), 201
 
+# View customer orders
+@app.route("/customers/<int:customer_id>/orders", methods=["GET"])
+def get_customer_orders(customer_id):
+    with get_session() as session:
+        customer_orders = session.query(Order).filter(Order.customer_id == customer_id).options(joinedload(Order.customer)).all()
+        session.close()
+
+        if customer_orders:
+            for order in customer_orders:
+                print(f"Order ID; {order.id}")
+            return render_template("customer_orders.html", title="Customer Order(s) - ", customer_orders=customer_orders)
+        else:
+            return 404
+
 # Routes for products
 @app.route("/products", methods=["GET"])
 def get_products():

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Customer Order(s){% endblock %}
+{% block content %}
+<h1>Customer Order(s) Table</h1>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Customer ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+    </tr>
+    {% for order in customer_orders %}
+        <tr>
+            <td> {{order.id}} </td>
+            <td> {{order.customer_id}} </td>
+            <td> {{order.customer.name}} </td>
+            <td> Test
+            </td>
+        </tr>
+    {% endfor %}
+    
+</table>
+{% endblock %}
