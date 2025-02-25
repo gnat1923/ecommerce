@@ -1,9 +1,13 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, url_for, redirect, flash, get_flashed_messages
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import joinedload
 from database import get_session
 from objects import Customer, Order, Product, OrderItem
+from forms import CustomerForm
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = "Slighting-Speckled9-Hypnotist-Tranquil-Marital"
+csrf = CSRFProtect(app)
 
 # Helper function to serialise SQLAlchemy objects
 def serialise(obj):
@@ -39,19 +43,34 @@ def serialise(obj):
 def index():
     return render_template("index.html")
 
+# Add customer
+@app.route("/customers/add", methods = ["GET", "POST"])
+def add_new_customer():
+    form = CustomerForm()
+    if form.validate_on_submit():
+        print("Form submitted successfully") # debugging
+        with get_session() as session:
+            customer = Customer(name=form.name.data,
+                                email=form.email.data)
+            session.add(customer)
+        return redirect(url_for("get_customers"))
+    else:
+        print("Validation failled", form.errors)
+    
+    return render_template("add_customer.html", form=form)
+
 # Routes for customers
 @app.route("/customers", methods=["GET"])
 def get_customers():
     with get_session() as session:
         # Eager load the orders relationship so html can access it
-        customers = session.query(Customer).options(joinedload(Customer.orders)).all()
-        session.close()
+        customers = session.query(Customer).all()
     
-    # differentiate between .json and html requests
-    if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
-        return jsonify([serialise(customer) for customer in customers])
-    else:
-        return render_template("customers.html", title="Customers - ", customers=customers)
+        # differentiate between .json and html requests
+        if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
+            return jsonify([serialise(customer) for customer in customers])
+        else:
+            return render_template("customers.html", title="Customers - ", customers=customers)
     
 
 @app.route("/customers/<int:customer_id>", methods=["GET"])
@@ -63,6 +82,71 @@ def get_customer(customer_id):
         if customer:
             return jsonify(serialise(customer))
     return jsonify({"error": "Customer not found"}), 404
+
+# Edit customers
+@app.route("/customers/<int:customer_id>/edit", methods=["GET", "POST"])
+def edit_customer(customer_id):
+    form = CustomerForm()
+    customer_name = ""
+
+    # Handle GET request + populate form
+    if request.method == "GET":
+        with get_session() as session:
+            customer = session.query(Customer).get(customer_id)
+            if not customer:
+                flash("Customer not found", "error")
+                return redirect(url_for("get_customers"))
+            
+            form.name.data = customer.name
+            form.email.data = customer.email
+            customer_name = customer.name
+
+    # Handle POST request
+    if form.validate_on_submit() and request.method == "POST":
+        try:
+            with get_session() as session:
+                customer = session.query(Customer).get(customer_id)
+                if not customer:
+                    flash("Customer not found", "error")
+                    return redirect(url_for("get_customers"))
+                
+                customer.name = form.name.data
+                customer.email = form.email.data
+
+                flash("Updated successfully", "success")
+                return redirect(url_for("get_customers"))
+        
+        except Exception as e:
+            # The context manager will handle rollback
+            flash(f"Error updating customer: {str(e)}", "error")
+            return redirect(url_for("get_customers"))
+
+    '''with get_session() as session:
+        customer = session.query(Customer).get(customer_id)
+        name = customer.name
+        email = customer.email
+
+    if request.method == "GET":
+        # Populate the form
+        form.name.data = name
+        form.email.data = email
+
+    if form.validate_on_submit() and request.method == "POST":
+    #if form.validate_on_submit():
+    
+        try:
+            with get_session() as session:
+                customer.name = form.name.data
+                customer.email = form.email.data
+                session.commit()
+                return redirect(url_for("get_customers"))
+            
+        except Exception as e:
+            print("An error occured")
+            return redirect(url_for("get_customers"))'''
+
+
+    return render_template("edit_customer.html", form=form, name=customer_name or form.name.data)
 
 @app.route('/customers', methods=['POST'])
 def create_customer():

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Add Customer {% endblock %}
+
+{% block content %}
+<h1>Add Customer</h1>
+
+<form method="POST" action="{{ url_for('add_new_customer') }}">
+    {{ form.hidden_tag() }}
+
+    {{ form.name.label }}
+    {{ form.name }}
+
+    {{ form.email.label }}
+    {{ form.email }}
+
+    {{ form.submit }}
+</form>
+
+{% endblock %}
