@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block content %}
+<h1>Customers Table</h1>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Actions</th>
+    </tr>
+    {% for customer in customers %}
+        <tr>
+            <td> {{customer.id}} </td>
+            <td> {{customer.name}} </td>
+            <td> {{customer.email}} </td>
+            <td> <a href="{{url_for('get_customer_orders', customer_id=customer.id)}}">View Orders</a> </td>
+        </tr>
+    {% endfor %}
+    
+</table>
+{% endblock %}
