@@ -64,7 +64,8 @@ def add_new_customer():
 def get_customers():
     with get_session() as session:
         # Eager load the orders relationship so html can access it
-        customers = session.query(Customer).all()
+        # Only get active customers
+        customers = session.query(Customer).filter(Customer.active == True).all()
     
         # differentiate between .json and html requests
         if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
@@ -100,6 +101,7 @@ def edit_customer(customer_id):
             form.name.data = customer.name
             form.email.data = customer.email
             customer_name = customer.name
+            customer_id = customer.id
 
     # Handle POST request
     if form.validate_on_submit() and request.method == "POST":
@@ -121,32 +123,8 @@ def edit_customer(customer_id):
             flash(f"Error updating customer: {str(e)}", "error")
             return redirect(url_for("get_customers"))
 
-    '''with get_session() as session:
-        customer = session.query(Customer).get(customer_id)
-        name = customer.name
-        email = customer.email
 
-    if request.method == "GET":
-        # Populate the form
-        form.name.data = name
-        form.email.data = email
-
-    if form.validate_on_submit() and request.method == "POST":
-    #if form.validate_on_submit():
-    
-        try:
-            with get_session() as session:
-                customer.name = form.name.data
-                customer.email = form.email.data
-                session.commit()
-                return redirect(url_for("get_customers"))
-            
-        except Exception as e:
-            print("An error occured")
-            return redirect(url_for("get_customers"))'''
-
-
-    return render_template("edit_customer.html", form=form, name=customer_name or form.name.data)
+    return render_template("edit_customer.html", form=form, name=customer_name or form.name.data, id=customer_id) # Edit html to use customer var only?
 
 @app.route('/customers', methods=['POST'])
 def create_customer():
@@ -157,6 +135,42 @@ def create_customer():
         session.commit()
         customer_data = serialise(customer)
     return jsonify(customer_data), 201
+
+# Delete a customer
+@app.route("/customers/<int:customer_id>/delete", methods=["POST"])
+def delete_customer(customer_id):
+    with get_session() as session:
+        customer = session.query(Customer).get(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("get_customers"))
+        
+        # Soft delete - just mark as inacticve
+        customer.active = False
+
+        flash(f"Customer {customer.name} has been deleted", "success")
+        return redirect(url_for("get_customers")) 
+    
+# View deleted customers
+@app.route("/customers/deleted", methods=["GET"])
+def get_deleted_customers():
+    with get_session() as session:
+        deleted_customers = session.query(Customer).filter(Customer.active == False).all()
+        return render_template("deleted_customers.html", title="Deleted Customers", customers=deleted_customers)
+
+# Restore a deleted customer
+@app.route("/customers/<int:customer_id>/restore", methods=["GET","POST"])
+def restore_customer(customer_id):
+    with get_session() as session:
+        customer = session.query(Customer).get(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("get_customers"))
+        
+        customer.active = True
+
+        flash(f"Customer {customer.name} has been restored successfully", "success")
+        return redirect(url_for("get_customers"))
 
 # View customer orders
 @app.route("/customers/<int:customer_id>/orders", methods=["GET"])

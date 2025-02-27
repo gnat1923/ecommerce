@@ -2,6 +2,7 @@
 {% block title %}Customers{% endblock %}
 {% block content %}
 <h1>Customers Table</h1>
+<button><a href="{{url_for('get_deleted_customers')}}">View Deleted Customers</a></button><br><br>
 <table>
     <tr>
         <th>ID</th>
@@ -14,7 +15,10 @@
             <td> {{customer.id}} </td>
             <td> {{customer.name}} </td>
             <td> {{customer.email}} </td>
-            <td> <a href="{{url_for('get_customer_orders', customer_id=customer.id)}}">View Orders</a> </td>
+            <td> 
+                <a href="{{url_for('edit_customer', customer_id=customer.id)}}">Edit Customer</a><br>
+                <a href="{{url_for('get_customer_orders', customer_id=customer.id)}}">View Orders</a>  
+            </td>
         </tr>
     {% endfor %}
     
