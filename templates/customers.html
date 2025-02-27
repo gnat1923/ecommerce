@@ -2,6 +2,7 @@
 {% block title %}Customers{% endblock %}
 {% block content %}
 <h1>Customers Table</h1>
+<button><a href="{{url_for('add_new_customer')}}">Add Customer</a></button>
 <button><a href="{{url_for('get_deleted_customers')}}">View Deleted Customers</a></button><br><br>
 <table>
     <tr>

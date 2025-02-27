@@ -3,7 +3,7 @@ from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import joinedload
 from database import get_session
 from objects import Customer, Order, Product, OrderItem
-from forms import CustomerForm
+from forms import CustomerForm, ProductForm
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "Slighting-Speckled9-Hypnotist-Tranquil-Marital"
@@ -219,6 +219,62 @@ def create_product():
         product_data = serialise(product)
         #session.close()
     return jsonify(product_data), 201
+
+# Add product via HTML
+@app.route("/products/add", methods=["GET", "POST"])
+def create_new_product():
+    form = ProductForm()
+
+    if form.validate_on_submit():
+        with get_session() as session:
+            product = Product(name=form.name.data,
+                              price=form.price.data)
+            session.add(product)
+        flash("Product added successfully", "success")
+        return redirect(url_for("get_products"))
+    
+    else:
+        flash("Validation failled", "error")
+
+    return render_template("add_product.html", title="Add Product", form=form)
+
+# Edit product
+@app.route("/products/<int:product_id>/edit", methods = ["GET", "POST"])
+def edit_product(product_id):
+    form = ProductForm()
+
+    # Load page - GET request
+    if request.method == "GET":
+        with get_session() as session:
+            product = session.query(Product).get(product_id)
+            if not product:
+                flash("Product not found", "error")
+                return redirect(url_for("get_products"))
+
+            form.name.data = product.name
+            form.price.data = product.price
+
+    # Handle submission
+    if form.validate_on_submit():
+        try:
+            with get_session() as session:
+                product = session.query(Product).get(product_id)
+                if not product:
+                    flash("Product not found", "error")
+                    return redirect(url_for("products"))
+                
+                product.name = form.name.data
+                product.price = form.price.data
+
+                flash("Updated successfully", "success")
+                return redirect(url_for("get_products"))
+            
+        except Exception as e:
+            flash(f"Error updating product: {e}", "error")
+            return redirect(url_for("get_products"))
+        
+    return render_template("edit_product.html", title="Edit Product", form=form)
+
 
 # routes for orders
 @app.route("/orders", methods=["GET"])
