@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Deleted Products</h1>
+
+<table>
+    <tr>
+        <th>Product</th>
+        <th>Action</th>
+    </tr>
+    {% for product in products %}
+        <tr>
+            <td> {{product.name}} </td>
+            <td> <a href="{{url_for('restore_product', product_id=product.id)}}">Restore product</a> </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

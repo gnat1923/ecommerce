@@ -190,7 +190,7 @@ def get_customer_orders(customer_id):
 @app.route("/products", methods=["GET"])
 def get_products():
     with get_session() as session:
-        products = session.query(Product).all()
+        products = session.query(Product).filter(Product.active==True).all()
         products_data = [serialise(product) for product in products]
         session.close()
 
@@ -225,16 +225,17 @@ def create_product():
 def create_new_product():
     form = ProductForm()
 
-    if form.validate_on_submit():
-        with get_session() as session:
-            product = Product(name=form.name.data,
-                              price=form.price.data)
-            session.add(product)
-        flash("Product added successfully", "success")
-        return redirect(url_for("get_products"))
-    
-    else:
-        flash("Validation failled", "error")
+    if request.method == "POST":
+        if form.validate_on_submit():
+            with get_session() as session:
+                product = Product(name=form.name.data,
+                                price=form.price.data)
+                session.add(product)
+            flash("Product added successfully", "success")
+            return redirect(url_for("get_products"))
+        
+        else:
+            flash("Validation failled", form.errors)
 
     return render_template("add_product.html", title="Add Product", form=form)
 
@@ -253,6 +254,7 @@ def edit_product(product_id):
 
             form.name.data = product.name
             form.price.data = product.price
+            id = product.id
 
     # Handle submission
     if form.validate_on_submit():
@@ -273,8 +275,52 @@ def edit_product(product_id):
             flash(f"Error updating product: {e}", "error")
             return redirect(url_for("get_products"))
         
-    return render_template("edit_product.html", title="Edit Product", form=form)
+    return render_template("edit_product.html", title="Edit Product", form=form, id=id)
 
+# Delete product
+@app.route("/products/<int:product_id>/delete", methods=["GET", "POST"])
+def delete_product(product_id):
+    with get_session() as session:
+        product = session.query(Product).get(product_id)
+        if not product:
+            flash("Product not found", "error")
+            return redirect(url_for("get_products"))
+        
+        product.active = False
+        flash(f"Product '{product.name}' has been deleted", "success")
+
+        return redirect(url_for("get_products"))
+
+# View deleted products
+@app.route("/products/deleted", methods=["GET"])
+def get_deleted_products():
+    with get_session() as session:
+        products = session.query(Product).filter(Product.active == False).all()
+        return render_template("deleted_products.html", title="Deleted Products", products=products) 
+
+# Restore a deleted product
+@app.route("/products/<int:product_id>/restore")
+def restore_product(product_id):
+    with get_session() as session:
+        product = session.query(Product).get(product_id)
+        if not product:
+            flash("Product not found", "error")
+            return redirect(url_for("get_products"))
+        
+        product.active = True
+        flash(f"Product '{product.name}' successfully restored", "success")
+        return redirect(url_for("get_products"))
+    
+# View product orders
+@app.route("/products/<int:product_id>/orders", methods=["GET"])
+def get_product_orders(product_id):
+    with get_session() as session:
+        orders = session.query(Order).filter(Order.items.product_id == product_id).options(joinedload(Order.items)).all()
+        if not orders:
+            flash("No orders associated with this product", "error")
+            return redirect(url_for("get_products"))
+        
+        return render_template("product_orders.html", Title="Product Orders", orders=orders)
 
 # routes for orders
 @app.route("/orders", methods=["GET"])

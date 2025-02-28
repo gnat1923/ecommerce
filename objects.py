@@ -26,6 +26,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
+    active = Column(Boolean, default=True)
     items = relationship("OrderItem", back_populates="product")
 
 # Define the OrderItem table (many-to-many relationship between orders and products)
