@@ -1,18 +1,35 @@
 {% extends "base.html" %}
+{% block title %}Add New Product {% endblock %}
 
 {% block content %}
-<h1>Add New Product</h1>
+<div class="container-fluid">
+    <h1 class="mb-4">Add Product</h1>
+    <form method="POST" action="{{ url_for('create_new_product') }}">
+        {{ form.hidden_tag() }}
 
-<form method="POST" action="{{ url_for('create_new_product') }}">
-    {{ form.hidden_tag() }}
+        <div class="mb-3">
+            <label for="{{form.name.id}}" class="form-label"> {{ form.name.label.text }} </label>
+            {{ form.name(class="form-control", id=form.name.id, placeholder="Enter Product name") }}
+            <div class="text-danger">
+                {% if form.name.errors %}
+                    <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.name.label }}
-    {{ form.name }}
+        <div class="mb-3">
+            <label for="{{form.price.id}}" class="form-label"> {{ form.price.label.text }} </label>
+            {{ form.price(class="form-control", id=form.name.id, placeholder="Enter price") }}
+            <div class="text-danger">
+                {% if form.name.errors %}
+                <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.price.label }}
-    {{ form.price }}
-
-    {{ form.submit }}
-</form>
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('get_products') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
 
 {% endblock %}

@@ -1,27 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Customers{% endblock %}
 {% block content %}
-<h1>Customers Table</h1>
-<button><a href="{{url_for('add_new_customer')}}">Add Customer</a></button>
-<button><a href="{{url_for('get_deleted_customers')}}">View Deleted Customers</a></button><br><br>
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Actions</th>
-    </tr>
-    {% for customer in customers %}
+<h1>Customers Table</h1><br>
+<a class="btn btn-primary" href="{{url_for('add_new_customer')}}" role="button">Add Customer</a>
+<a class="btn btn-primary" href="{{url_for('get_deleted_customers')}} " role="button">View Deleted Customers</a><br><br>
+
+<div class="container-fluid">
+    <table class="table">
         <tr>
-            <td> {{customer.id}} </td>
-            <td> {{customer.name}} </td>
-            <td> {{customer.email}} </td>
-            <td> 
-                <a href="{{url_for('edit_customer', customer_id=customer.id)}}">Edit Customer</a><br>
-                <a href="{{url_for('get_customer_orders', customer_id=customer.id)}}">View Orders</a>  
-            </td>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Actions</th>
         </tr>
-    {% endfor %}
-    
-</table>
+        {% for customer in customers %}
+            <tr>
+                <td> {{customer.id}} </td>
+                <td> {{customer.name}} </td>
+                <td> {{customer.email}} </td>
+                <td> 
+                    <a href="{{url_for('edit_customer', customer_id=customer.id)}}">Edit Customer</a>
+                    <a href="{{url_for('get_customer_orders', customer_id=customer.id)}}">View Orders</a>  
+                </td>
+            </tr>
+        {% endfor %}
+        
+    </table>
+</div>
 {% endblock %}

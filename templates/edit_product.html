@@ -1,24 +1,34 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Edit Product</h1>
 
-<form method="POST">
-    {{ form.hidden_tag() }}
+<div class="container-fluid">
+    <h1 class="mb-4">Edit Product</h1>
+    <form method="POST" action="{{ url_for('create_new_product') }}">
+        {{ form.hidden_tag() }}
 
-    {{ form.name.label }}
-    {{ form.name }}
+        <div class="mb-3">
+            <label for="{{form.name.id}}" class="form-label"> {{ form.name.label.text }} </label>
+            {{ form.name(class="form-control", id=form.name.id) }}
+            <div class="text-danger">
+                {% if form.name.errors %}
+                    <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.price.label }}
-    {{ form.price }}
+        <div class="mb-3">
+            <label for="{{form.price.id}}" class="form-label"> {{ form.price.label.text }} </label>
+            {{ form.price(class="form-control", id=form.price.id) }}
+            <div class="text-danger">
+                {% if form.price.errors %}
+                    <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.submit }}
-</form>
-<br><br>
-
-<form method="POST" action="{{ url_for('delete_product', product_id=id) }}" 
-      onsubmit="return confirm('Are you sure you want to delete this product?');">
-      {{ form.hidden_tag() }}
-    <button type="submit" class="btn btn-danger">Delete</button>
-</form>
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('get_products') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
 {% endblock %}

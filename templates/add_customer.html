@@ -2,18 +2,34 @@
 {% block title %}Add Customer {% endblock %}
 
 {% block content %}
-<h1>Add Customer</h1>
+<div class="container-fluid">
+    <h1 class="mb-4">Add Customer</h1>
+    <form method="POST" action="{{ url_for('add_new_customer') }}">
+        {{ form.hidden_tag() }}
 
-<form method="POST" action="{{ url_for('add_new_customer') }}">
-    {{ form.hidden_tag() }}
+        <div class="mb-3">
+            <label for="{{form.name.id}}" class="form-label"> {{ form.name.label.text }} </label>
+            {{ form.name(class="form-control", id=form.name.id, placeholder="Enter customer name") }}
+            <div class="text-danger">
+                {% if form.name.errors %}
+                    <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.name.label }}
-    {{ form.name }}
+        <div class="mb-3">
+            <label for="{{form.email.id}}" class="form-label"> {{ form.email.label.text }} </label>
+            {{ form.email(class="form-control", id=form.name.id, placeholder="Enter customer email") }}
+            <div class="text-danger">
+                {% if form.name.errors %}
+                    <small> {{error}} </small>
+                {% endif %}
+            </div>
+        </div>
 
-    {{ form.email.label }}
-    {{ form.email }}
-
-    {{ form.submit }}
-</form>
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('get_customers') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
 
 {% endblock %}

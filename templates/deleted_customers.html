@@ -1,6 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container-fluid">
+    <h1>Deleted Customers</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.name }}</td>
+                    <td> {{ customer.email }} </td>
+                    <td> <a class="btn btn-primary" role="button" href="{{url_for('restore_customer', customer_id=customer.id)}}">Restore Customer</a> </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<!--
 <h1>Deleted Customers</h1>
 
 <table>
@@ -15,4 +40,5 @@
         </tr>
     {% endfor %}
 </table>
+-->
 {% endblock %}
