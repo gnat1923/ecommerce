@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Products{% endblock %}
 {% block content %}
+<!--
 <h1>Orders Table</h1>
 <table>
     <tr>
@@ -19,4 +20,30 @@
     {% endfor %}
     
 </table>
+-->
+<h1>Orders Table</h1><br>
+<a class="btn btn-primary" href="{{url_for('get_deleted_customers')}} " role="button">View Deleted Orders</a><br><br>
+
+<div class="container-fluid">
+    <table class="table">
+        <tr>
+            <th>ID</th>
+            <th>Customer ID</th>
+            <th>Customer</th>
+            <th>Actions</th>
+        </tr>
+        {% for order in orders %}
+            <tr>
+                <td> {{order.id}} </td>
+                <td> {{order.customer_id}} </td>
+                <td> {{order.customer.name}} </td>
+                <td> 
+                    <a href="{{url_for('index')}}">Edit Order</a>
+                    <a href="{{url_for('index')}}">View Order</a>  
+                </td>
+            </tr>
+        {% endfor %}
+        
+    </table>
+</div>
 {% endblock %}

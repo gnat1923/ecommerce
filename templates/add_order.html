@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Create Order for {{ customer_name }}</h1>
+    
+    <!-- Add Items Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Add Products to Order</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                {{ item_form.hidden_tag() }}
+                <div class="col-md-6">
+                    <label for="{{ item_form.product_id.id }}" class="form-label">Select Product</label>
+                    {{ item_form.product_id(class="form-select", id=item_form.product_id.id) }}
+                    <div class="text-danger">
+                        {% if item_form.product_id.errors %}
+                            {% for error in item_form.product_id.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ item_form.quantity.id }}" class="form-label">Quantity</label>
+                    {{ item_form.quantity(class="form-control", id=item_form.quantity.id, value=1) }}
+                    <div class="text-danger">
+                        {% if item_form.quantity.errors %}
+                            {% for error in item_form.quantity.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" name="add_item" class="btn btn-success w-100">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Order Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Order Summary</h5>
+        </div>
+        <div class="card-body">
+            {% if items %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Subtotal</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                <tr>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>${{ "%.2f"|format(item.price) }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ "%.2f"|format(item.subtotal) }}</td>
+                                    <td>
+                                        <form method="POST">
+                                            {{ item_form.hidden_tag() }}
+                                            <input type="hidden" name="remove_item" value="{{ loop.index0 }}">
+                                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="table-dark">
+                                <td colspan="3" class="text-end fw-bold">Total:</td>
+                                <td class="fw-bold">${{ "%.2f"|format(order_total) }}</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No items added to this order yet. Use the form above to add products.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Submit Order -->
+    <div class="d-flex justify-content-between mb-5">
+        <a href="{{ url_for('get_customers') }}" class="btn btn-secondary">Cancel</a>
+        {% if items %}
+            <form method="POST">
+                {{ item_form.hidden_tag() }}
+                <input type="hidden" name="complete_order" value="1">
+                <button type="submit" class="btn btn-primary">Complete Order</button>
+            </form>
+        {% else %}
+            <button class="btn btn-primary" disabled>Complete Order</button>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

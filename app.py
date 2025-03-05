@@ -1,9 +1,9 @@
-from flask import Flask, jsonify, request, render_template, url_for, redirect, flash, get_flashed_messages
+from flask import Flask, jsonify, request, render_template, url_for, redirect, flash, get_flashed_messages, session as flask_session
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import joinedload
 from database import get_session
 from objects import Customer, Order, Product, OrderItem
-from forms import CustomerForm, ProductForm
+from forms import CustomerForm, ProductForm, OrderForm, OrderItemForm
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "Slighting-Speckled9-Hypnotist-Tranquil-Marital"
@@ -323,6 +323,7 @@ def get_product_orders(product_id):
         return render_template("product_orders.html", Title="Product Orders", orders=orders)
 
 # routes for orders
+# Get all orders
 @app.route("/orders", methods=["GET"])
 def get_orders():
     with get_session() as session:
@@ -333,8 +334,9 @@ def get_orders():
     if request.args.get("format") == "json" or request.headers.get("Accept") == "application/json":
         return jsonify(orders_data)
     else:
-        return render_template("orders.html", title="Orders - ", orders=orders)
+        return render_template("orders.html", title="Orders", orders=orders)
 
+# Get one order
 @app.route("/orders/<int:order_id>", methods=["GET"])
 def get_order(order_id):
     with get_session() as session:
@@ -345,6 +347,7 @@ def get_order(order_id):
             return jsonify(serialise(order))
     return jsonify({"error" : "Unable to find order"}), 404
 
+# Create new order
 @app.route("/orders", methods=["POST"])
 def create_order():
     data = request.json
@@ -372,6 +375,97 @@ def create_order():
         }
 
     return jsonify(order_data), 201
+
+# Create a new order (HTML)
+@app.route("/orders/<int:customer_id>/add_order", methods =["GET", "POST"])
+def add_order(customer_id):
+    # Verify customer exists
+    with get_session() as session:
+        customer = session.query(Customer).get(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("get_orders"))
+
+        # Prepare product selection
+        products = session.query(Product).filter_by(active=True).all()
+
+        # Initialise the order item form
+        item_form = OrderItemForm()
+        item_form.product_id.choices = [(p.id, f"{p.name} (${p.price:.2f})") for p in products]
+
+        customer_name = customer.name
+
+    # Initialise flask session for order items
+    if "order_items" not in flask_session:
+        flask_session["order_items"] = []
+
+    # Handle adding an item to the order
+    if request.method == "POST" and "add_item" in request.form:
+        if item_form.validate_on_submit():
+            with get_session() as session:
+                product = session.query(Product).get(item_form.product_id.data)
+
+                flask_session["order_items"].append({
+                    "product_id":product.id,
+                    "product_name":product.name,
+                    "price":product.price,
+                    "quantity":item_form.quantity.data,
+                    "subtotal":product.price * item_form.quantity.data
+                })
+
+                flash(f"Added {item_form.quantity.data} x {product.name}", "success")
+
+        else:
+            flash("Please select a product and a quantity", "error")
+
+        return redirect(url_for("add_order", customer_id=customer_id))
+
+    # Handle completing the order
+    if request.method == "POST" and "complete_order" in request.form:
+        # Validate that we have items
+        if not flask_session.get("order_items", []):
+            flash("Cannot create empty order", "error")
+            return redirect(url_for("add_order", customer_id=customer_id))
+
+        try:
+            with get_session() as session:
+                # Create new order
+                new_order = Order(customer_id=customer_id)
+                session.add(new_order)
+                session.flush() # makes new order ID available
+
+                # Add order items
+                for item in flask_session["order_items"]:
+                    order_item = OrderItem(
+                        order_id=new_order.id,
+                        product_id=item["product_id"],
+                        quantity=item["quantity"]
+                    )
+                    session.add(order_item)
+
+                session.commit()
+
+                # Clear Flask session order items
+                flask_session.pop("order_items", None)
+                flash("Order created successfully", "success")
+                return redirect(url_for("get_orders"))
+
+        except Exception as e:
+            flash(f"Error creating order: {e}", "error")
+            return redirect(url_for("add_order", customer_id=customer_id))
+
+    # Calculate order total
+    order_total = sum(item["subtotal"] for item in flask_session.get("order_items", []))
+
+    return render_template(
+        "add_order.html", 
+        title=f"Create Order for {customer_name}",
+        customer_name=customer_name,
+        customer=customer,
+        item_form=item_form,
+        items=flask_session.get('order_items', []),
+        order_total=order_total
+    )
 
 # Run the flask app
 if __name__ == "__main__":
