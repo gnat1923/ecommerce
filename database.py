@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from objects import Base
+from sqlalchemy.orm import sessionmaker, declarative_base
 from contextlib import contextmanager
 
 # SQLite database URL
@@ -8,6 +7,9 @@ DATABASE_URL = "sqlite:///ecommerce.db"
 
 # Create the engine
 engine = create_engine(DATABASE_URL, echo=True)
+
+# Define the Base for declarative models
+Base = declarative_base()
 
 # Create all tables
 Base.metadata.create_all(engine)

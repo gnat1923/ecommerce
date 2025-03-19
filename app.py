@@ -1,13 +1,15 @@
 from flask import Flask, jsonify, request, render_template, url_for, redirect, flash, get_flashed_messages, session as flask_session
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import joinedload
+from extenstions import LoginManager, current_user, login_user
 from database import get_session
 from objects import Customer, Order, Product, OrderItem
-from forms import CustomerForm, ProductForm, OrderForm, OrderItemForm
+from forms import CustomerForm, ProductForm, OrderForm, OrderItemForm, LoginForm
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "Slighting-Speckled9-Hypnotist-Tranquil-Marital"
 csrf = CSRFProtect(app)
+login = LoginManager(app)
 
 # Helper function to serialise SQLAlchemy objects
 def serialise(obj):
@@ -42,6 +44,21 @@ def serialise(obj):
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        with get_session() as session:
+            customer = session.query(Customer).where(Customer.email == form.email.data)
+            if customer is None or not customer.check_password(form.password.data):
+                flash('Invalid username or password')
+                return redirect(url_for('login'))
+            login_user(customer, remember=form.remember_me.data)
+            return redirect(url_for('index'))
+    return render_template('login.html', title='Sign In', form=form)
 
 # Add customer
 @app.route("/customers/add", methods = ["GET", "POST"])
@@ -466,6 +483,30 @@ def add_order(customer_id):
         items=flask_session.get('order_items', []),
         order_total=order_total
     )
+
+# View order
+@app.route("/orders/view/<int:order_id>", methods=["GET"])
+def view_order(order_id):
+    # Query order
+    with get_session() as session:
+        order_items = (session.query(OrderItem)
+                       .options(joinedload(OrderItem.product))
+                       .filter_by(order_id=order_id)
+                       .all())
+        
+        if not order_items:
+            flash("Order does not exist", "error")
+            return redirect(url_for("get_orders"))
+        '''order = session.query(Order).filter_by(id=order_id).first()
+        if not order:
+            flash("Order does not exist", "error")
+            return redirect(url_for("get_orders"))
+        
+        # Query orderitems
+        order_items = session.query(OrderItem).filter_by(order_id=order_id).all()
+        items = order_items'''
+
+        return render_template("view_order.html", title=f"Order #{order_id}", items=order_items)
 
 # Run the flask app
 if __name__ == "__main__":

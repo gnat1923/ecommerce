@@ -1,5 +1,7 @@
 import os
 import sys
+from database import Base  # Import Base from database.py
+from objects import Customer, Order, Product, OrderItem  # Import models after Base is initialized
 
 # Point alembic to my opjects.py file
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
